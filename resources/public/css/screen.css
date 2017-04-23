@@ -1,0 +1,38 @@
+body {
+    background: #444444
+}
+
+div.sea_cell {
+    height: 20px;
+    width: 20px;
+    background: #0000FF;
+    display: table-cell;
+    border: 1px solid black;
+}
+
+div.fish_cell {
+    height: 5px;
+    width: 5px;
+    background: #00FF00;
+    display: table-cell;
+}
+
+div.shark_cell {
+    height: 12px;
+    width: 12px;
+    background: #000000;
+    
+}
+
+div.map_grid {
+    display: table;
+    border-collapse: collapse;
+    border: 1px solid black;
+    width: 90%;
+    background: #111111
+}
+
+div.map_row {
+    display: table-row;
+}
+
