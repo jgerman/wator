@@ -30,6 +30,7 @@
        :chronon)))
 
 (defonce do-timer (js/setInterval dispatch-timer-event 1000))
+
 (defn main-panel []
   (let [map (re-frame/subscribe [:map])]
     (render-map @map)))

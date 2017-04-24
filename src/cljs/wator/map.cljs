@@ -23,7 +23,9 @@
 
 (defn add-creature [world r c creature]
   (let [row (nth world r)
-        new-row (assoc row c creature)]
+        new-row (assoc row c (-> creature
+                                 (assoc :c c)
+                                 (assoc :r r)))]
     (assoc world r new-row)))
 
 (defn add-rand-creature [world type]
@@ -97,9 +99,32 @@
    (get-top r c)
    (get-bottom r c)])
 
+(defn extract-fish
+  "Find all fish in the map so we can move/breed them."
+  [map]
+  (filter #((= (:type %) :fish))
+          (mapcat identity map)))
+
+(defn fish-behavior [map
+                     {:keys [age c r]}]
+  (let [neighbors (get-neighbors r c)]
+    map)) ;here's where I left off, lets use :type sea instead of nil for sea cells and keep the location in them so we can save a lookup 
+
+(defn extract-sharks
+  "Find all the sharks in the map so we can move/breed them"
+  [map]
+  (filter #((= (:type %) :fish))
+          (mapcat identity map)))
+
 (defn fish-move [map]
   "Moves and breeds all the fish in the map, returns the updated map"
-  map)
+  (let [fish-locations (extract-fish map)]
+    (loop [fs fish-locations ;I think I'm going to shuffle these arrayss to start with a random fish every time
+           m  map]
+      (if (empty? fs)
+        m
+        (recur (rest fish-locations)
+               (fish-behavior m (first fish-locations)))))))
 
 (defn simulate [map]
   (-> map
