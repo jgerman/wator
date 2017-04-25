@@ -119,14 +119,28 @@
 (defn age-fish [{:keys [age] :as fish}]
   (assoc fish :age (inc age)))
 
+(defn breed-fish [map breed? r c]
+  (if breed?
+    (add-cell map r c {:type :fish :age 0})
+    map))
+
 (defn fish-behavior [map
                      {:keys [age c r] :as fish}]
   (let [neighbors (get-neighbors map r c)
         empty-sea (filter #(= :sea (:type %)) neighbors)
-        aged-fish (age-fish fish)]
+        temp-fish (age-fish fish)
+        breed? (if (< fish-breed (:age temp-fish))
+                 true
+                 false)
+        ;; this is ugly but will fix later
+        aged-fish (if breed?
+                    (assoc temp-fish :age 0)
+                    temp-fish)
+        ]
     (if (empty? empty-sea)
       map
-      (swap-cells map aged-fish (rand-nth empty-sea))))) 
+      (-> (swap-cells map aged-fish (rand-nth empty-sea))
+          (breed-fish breed? r c)))))
 
 (defn extract-sharks
   "Find all the sharks in the map so we can move/breed them"
@@ -141,10 +155,23 @@
            m  map]
       (if (empty? fs)
         m
-        (recur (rest fish-locations)
-               (fish-behavior m (first fish-locations)))))))
+        (recur (rest fs)
+               (fish-behavior m (first fs)))))))
+
+(defn shark-behavior [map shark]
+  map)
+
+(defn shark-move [map]
+  (let [shark-locations (extract-sharks map)]
+    (loop [shs shark-locations
+           m map]
+      (if (empty? shs)
+        m
+        (recur (rest shs)
+               (shark-behavior m (first shs)))))))
 
 (defn simulate [map]
-  (seed-world 25 25 10 10)
-  #_(-> map
-      fish-move))
+ #_  (seed-world 25 25 10 10)
+  (-> map
+      fish-move
+      #_shark-move))
