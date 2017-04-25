@@ -6,9 +6,11 @@
 (def shark-breed 10)
 (def shark-death 20)
 
+(def sea {:type :sea})
+
 (defn make-world-row [size]
   (vec (for [x (range 0 size)]
-           nil)))
+           (assoc sea :c x))))
 
 
 (defn random-fish []
@@ -21,9 +23,9 @@
    :type :shark
    :age (rand-int shark-death)})
 
-(defn add-creature [world r c creature]
+(defn add-cell [world r c cell]
   (let [row (nth world r)
-        new-row (assoc row c (-> creature
+        new-row (assoc row c (-> cell
                                  (assoc :c c)
                                  (assoc :r r)))]
     (assoc world r new-row)))
@@ -34,7 +36,7 @@
         creature (if (= type :fish)
                      (random-fish)
                      (random-shark))]
-    (add-creature world row col creature)))
+    (add-cell world row col creature)))
 
 (defn add-fish [world num-fish]
   "Create num-fish random fish.
@@ -58,7 +60,9 @@
 
 (defn seed-world [rows columns start-fish start-sharks]
   (let [empty-world (vec (for [x (range 0 rows)]
-                           (make-world-row columns)))]
+                           (->> (make-world-row columns)
+                                (map #(assoc % :r x))
+                                vec)))]
     (-> empty-world
         (add-fish start-fish)
         (add-sharks start-sharks))))
@@ -69,46 +73,60 @@
       (nth r)
       (nth c)))
 
-(defn get-left [r c]
+(defn get-left [w r c]
   (let [new-c (dec c)]
     (if (< new-c 0)
-      [r MAX-COL]
-      [r new-c])))
+      (get-cell r (dec MAX-COL) w)
+      (get-cell r new-c w))))
 
-(defn get-right [r c]
+(defn get-right [w r c]
   (let [new-c (inc c)]
-    (if (> new-c MAX-COL)
-      [r 0]
-      [r new-c])))
+    (if (>= new-c MAX-COL)
+      (get-cell r 0 w)
+      (get-cell r new-c w))))
 
-(defn get-top [r c]
+(defn get-top [w r c]
   (let [new-r (dec r)]
     (if (< new-r 0)
-      [MAX-ROW c]
-      [new-r c])))
+      (get-cell (dec MAX-ROW) c w)
+      (get-cell new-r c w))))
 
-(defn get-bottom [r c]
+(defn get-bottom [w r c]
   (let [new-r (inc r)]
-    (if (> new-r MAX-ROW)
-      [0 c]
-      [new-r c])))
+    (if (>= new-r MAX-ROW)
+      (get-cell 0 c w)
+      (get-cell new-r c w))))
 
-(defn get-neighbors [r c]
-  [(get-left r c)
-   (get-right r c)
-   (get-top r c)
-   (get-bottom r c)])
+(defn get-neighbors [world r c]
+  [(get-left world r c)
+   (get-right world r c)
+   (get-top world r c)
+   (get-bottom world r c)])
+
+(defn swap-cells [map cell-1 cell-2]
+  (let [{cell-1-r :r cell-1-c :c} cell-1
+        {cell-2-r :r cell-2-c :c} cell-2]
+    (-> map
+        (add-cell cell-1-r cell-1-c cell-2)
+        (add-cell cell-2-r cell-2-c cell-1))))
 
 (defn extract-fish
   "Find all fish in the map so we can move/breed them."
   [map]
-  (filter #((= (:type %) :fish))
+  (filter #(= (:type %) :fish)
           (mapcat identity map)))
 
+(defn age-fish [{:keys [age] :as fish}]
+  (assoc fish :age (inc age)))
+
 (defn fish-behavior [map
-                     {:keys [age c r]}]
-  (let [neighbors (get-neighbors r c)]
-    map)) ;here's where I left off, lets use :type sea instead of nil for sea cells and keep the location in them so we can save a lookup 
+                     {:keys [age c r] :as fish}]
+  (let [neighbors (get-neighbors map r c)
+        empty-sea (filter #(= :sea (:type %)) neighbors)
+        aged-fish (age-fish fish)]
+    (if (empty? empty-sea)
+      map
+      (swap-cells map aged-fish (rand-nth empty-sea))))) 
 
 (defn extract-sharks
   "Find all the sharks in the map so we can move/breed them"
@@ -127,5 +145,6 @@
                (fish-behavior m (first fish-locations)))))))
 
 (defn simulate [map]
-  (-> map
+  (seed-world 25 25 10 10)
+  #_(-> map
       fish-move))
